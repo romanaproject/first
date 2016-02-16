@@ -1,0 +1,5 @@
+#$controller_vm_memory=512
+
+#$worker_count=1
+#$worker_vm_memory=1024
+

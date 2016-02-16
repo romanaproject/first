@@ -1,0 +1,92 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+require 'fileutils'
+
+$controller_vm_memory = 4096
+$worker_count = 1
+$worker_vm_memory = 1024
+
+CONFIG = File.expand_path("config.rb")
+if File.exist?(CONFIG)
+  require CONFIG
+end
+
+if $worker_vm_memory < 512
+  puts "Workers should have at least 512 MB of memory"
+end
+
+if $controller_vm_memory < 3072
+  puts "Controller should have at least 3072 MB of memory"
+end
+
+if $worker_count > 9
+  puts "Up to 9 workers supported only"
+  $worker_count = 9
+end
+
+Vagrant.configure(2) do |config|
+  # Common VM configuration
+  config.vm.box = "ubuntu/trusty64"
+  config.vm.box_url = "http://cloud-images.ubuntu.com/vagrant/trusty/current/trusty-server-cloudimg-amd64-vagrant-disk1.box"
+  config.vm.synced_folder '../', '/home/vagrant/romana'
+  config.vm.provision "shell", inline: <<-EOF
+    if test -d /home/vagrant/romana/romana-install/deps/stack; then
+       if ! test -d /opt/stack; then
+         cp -a /home/vagrant/romana/romana-install/deps/stack /opt
+         chown -R ubuntu:ubuntu /opt/stack
+       fi
+    fi
+    test -d /home/vagrant/romana/romana-install/deps/archives && cp -a /home/vagrant/romana/romana-install/deps/archives/* /var/cache/apt/archives/
+    apt-get update && apt-get install -y git python-apt python-pip python-dev  python-netaddr && pip install awscli ansible
+  EOF
+  # ---
+
+  # Compute-specific VM configuration
+  (1..$worker_count).each do |i|
+    config.vm.define "romana-compute0#{i}" do |compute|
+      config.vm.hostname = "ip-192-168-99-1#{i}"
+      compute.vm.network "private_network", ip: "192.168.99.1#{i}"
+      compute.vm.provider "virtualbox" do |vb|
+        vb.name = "romana-compute0#{i}"
+        vb.memory = $worker_vm_memory
+        vb.customize ["modifyvm", :id, "--natdnshostresolver1", "on", "--natnet1", "192.168/16"]
+      end
+      compute.vm.provision "shell", inline: <<-EOF
+         	if ! test -f /home/vagrant/.ssh/id_rsa; then
+  		wget https://raw.githubusercontent.com/mitchellh/vagrant/master/keys/vagrant -O /home/vagrant/.ssh/id_rsa
+  		chmod 600 /home/vagrant/.ssh/id_rsa*
+  		chown vagrant:vagrant /home/vagrant/.ssh/id_rsa*
+  		ssh-keygen -yf /home/vagrant/.ssh/id_rsa >> /home/vagrant/.ssh/authorized_keys
+  	fi
+      EOF
+    end
+  end
+  # ---
+
+  # Controller-specific VM configuration
+  config.vm.define "romana-controller" do |controller|
+    wc = $worker_count
+    config.vm.hostname = "ip-192-168-99-10"
+    controller.vm.network "private_network", ip: "192.168.99.10"
+    controller.vm.provider "virtualbox" do |vb|
+      vb.name = "romana-controller"
+      vb.memory = $controller_vm_memory
+      vb.customize ["modifyvm", :id, "--natdnshostresolver1", "on", "--natnet1", "192.168/16"]
+    end
+    controller.vm.provision "shell", inline: <<-EOF
+       	if ! test -f /home/vagrant/.ssh/id_rsa; then
+		wget https://raw.githubusercontent.com/mitchellh/vagrant/master/keys/vagrant -O /home/vagrant/.ssh/id_rsa
+		chmod 600 /home/vagrant/.ssh/id_rsa*
+		chown vagrant:vagrant /home/vagrant/.ssh/id_rsa*
+		ssh-keygen -yf /home/vagrant/.ssh/id_rsa >> /home/vagrant/.ssh/authorized_keys
+	fi
+	if ! test -f /home/vagrant/romana/romana-install/hosts.ini; then
+		echo -e "[stack-nodes]\n 192.168.99.10\n 192.168.99.11\n \n [controller]\n 192.168.99.10\n \n [computes]\n 192.168.99.11\n " > /home/vagrant/romana/romana-install/hosts.ini
+	fi
+	sudo su - vagrant -c "cd /home/vagrant/romana/romana-install/ && NUM_COMPUTE_NODES=#{wc} ansible -i vmock.py -m ping all"
+	sudo su - vagrant -c "cd /home/vagrant/romana/romana-install/ && NUM_COMPUTE_NODES=#{wc} ansible-playbook -i vmock.py config_vagrant.yml"
+    EOF
+  end
+  # ---
+end
