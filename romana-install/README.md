@@ -27,5 +27,5 @@ vagrant ssh romana-controller
 mkdir -p /home/vagrant/romana/romana-install/deps/stack
 sudo cp -af /var/cache/apt/archives /home/vagrant/romana/romana-install/deps
 cd /opt/stack
-sudo cp -f cinder glance horizon keystone neutron noVNC	nova requirements /home/vagrant/romana/romana-install/deps/stack/
+sudo cp -af cinder glance horizon keystone neutron noVNC nova requirements /home/vagrant/romana/romana-install/deps/stack/
 ```
