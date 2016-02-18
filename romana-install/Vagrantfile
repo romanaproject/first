@@ -12,11 +12,11 @@ if File.exist?(CONFIG)
   require CONFIG
 end
 
-if $worker_vm_memory < 512
+if $worker_vm_memory < 1024
   puts "Workers should have at least 512 MB of memory"
 end
 
-if $controller_vm_memory < 3072
+if $controller_vm_memory < 4096
   puts "Controller should have at least 3072 MB of memory"
 end
 

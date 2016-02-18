@@ -14,7 +14,7 @@ Start
 -----
 
 Just type `vagrant up`.
-Cold start might fetch some few hundred megapytes of data and could take up to an hour.
+Cold start might fetch some few hundred megabytes of data and could take up to an hour.
 
 
 Cache
