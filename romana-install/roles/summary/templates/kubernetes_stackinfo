@@ -5,6 +5,7 @@ Master
 ------
 {% for i in groups.controller %}{% set n = hostvars[i] %}
 IP: {{ n.ansible_ssh_host }}
+http://{{ n.ansible_ssh_host }}:8080/ui/
 ssh -i {{ "romana_id_rsa" | realpath }}{% if n.ansible_ssh_port | default(22) != 22 %} -p {{ n.ansible_ssh_port }}{% endif %} {{ n.ansible_ssh_user }}@{{ n.ansible_ssh_host }}
 {% endfor %}
 
