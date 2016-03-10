@@ -22,15 +22,6 @@ fi
 # Suppress output
 exec > /dev/null
 
-# This script currently directly uses the REST API of the Romana Topology and Tenant services
-# to configure the hosts/tenants/segments used in a simple setup.
-
-# Create hosts
-romana add-host ip-{{ stack_nodes.Controller.mgmt_ip | replace('.', '-') }} {{ stack_nodes.Controller.mgmt_ip }} {{ stack_nodes.Controller.gateway }} 9604
-{% for node in stack_nodes.ComputeNodes[:compute_nodes] %}
-romana add-host ip-{{ stack_nodes[node].mgmt_ip | replace('.', '-') }} {{ stack_nodes[node].mgmt_ip }} {{ stack_nodes[node].gateway }} 9604
-{% endfor %}
-
 # Create tenants and segments
 romana create-tenant admin
 romana add-segment admin default
@@ -53,9 +44,6 @@ fi
 if ! nova keypair-show shared-key 2>/dev/null; then
 	nova keypair-add --pub-key ~/.ssh/id_rsa.pub shared-key
 fi
-
-# Boot inst1 using romana's network
-# - nova boot --flavor m1.micro --image cirros-0.3.4-x86_64-uec --key-name shared-key --nic net-id=$(neutron net-show romana -Fid -f value) inst1
 
 # Add Nano and Micro Flavours if it is not present.
 if ! nova flavor-show m1.nano &>/dev/null; then
