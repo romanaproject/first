@@ -734,13 +734,23 @@ under the License.
             "FromPort": 80,
             "ToPort": 80,
             "IpProtocol": "tcp"
-          },
+          }
+{%- if stack_type == "devstack" %},
           {
             "CidrIp": "0.0.0.0/0",
             "FromPort": "6080",
             "ToPort": "6080",
             "IpProtocol": "tcp"
           }
+{% endif %}
+{%- if stack_type == "kubernetes" %},
+          {
+            "CidrIp": "0.0.0.0/0",
+            "FromPort": "8080",
+            "ToPort": "8080",
+            "IpProtocol": "tcp"
+          }
+{% endif %}
 	],
         "Tags": [
           {
