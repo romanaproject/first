@@ -1,15 +1,30 @@
 ---
-- name: Create bin directory
-  file: path="/home/ubuntu/bin/" mode=0775 state=directory
-
-- name: Install romana tool
-  template: src="../cmd/romana.k8s" dest="/home/ubuntu/bin/romana" mode=0775
-
-- name: Install romana post-install script
-  template: src="romana-post-install.sh" dest="/var/tmp/romana-post-install.sh" mode=0755
+- name: Install kubernetes post-install script
+  template: src="kubernetes-post-install.sh" dest="/var/tmp/kubernetes-post-install.sh" mode=0755
         
-- name: Execute romana post-install script
-  shell: /var/tmp/romana-post-install.sh
+- name: Execute kubernetes post-install script
+  shell: /var/tmp/kubernetes-post-install.sh
+
+- name: Copy dashboard files
+  copy: src="dashboard/{{ item }}" dest="{{ kubernetes_x_dir }}/{{ item }}"
+  with_items:
+    - namespace-kube-system.yaml
+    - kube-ui-rc.yaml
+    - kube-ui-svc.yaml
+  register: kui
+
+# Workaround for lack of routes between node with apiserver and node running kube-ui pods
+# label here, nodeSelector using label in kube-ui-rc.yaml
+- name: Add a label to master node
+  command: kubectl label node "ip-{{ stack_nodes.Controller.mgmt_ip | replace('.', '-') }}" "apiserver=present"
+
+- name: Create resources
+  when: kui.changed
+  command: kubectl create -f "{{ kubernetes_x_dir }}/{{ item }}"
+  with_items:
+    - namespace-kube-system.yaml
+    - kube-ui-rc.yaml
+    - kube-ui-svc.yaml
 
 - name: Create demo directory
   file: path="/home/ubuntu/demo/" mode=0775 state=directory
