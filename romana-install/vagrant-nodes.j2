@@ -1,0 +1,36 @@
+{
+  "_meta": {
+    "hostvars": {
+      {% for compute in computes %}
+      "romana-compute0{{ compute.id }}": {
+        "stack_host": "Compute0{{ compute.id }}",
+        "ansible_ssh_private_key_file": "/home/vagrant/.ssh/id_rsa",
+        "ansible_ssh_user": "vagrant",
+        "ansible_ssh_port": "22",
+        "ansible_ssh_host": "{{ compute.ip }}"
+      },
+      {% endfor %}
+      "romana-controller": {
+        "stack_host": "Controller",
+        "ansible_ssh_private_key_file": "/home/vagrant/.ssh/id_rsa",
+        "ansible_ssh_user": "vagrant",
+        "ansible_ssh_port": "22",
+        "ansible_ssh_host": "{{ control.ip }}"
+      }
+    }
+  },
+  "computes": [
+    {% for compute in computes %}
+      {% if compute.id > 1 %} , {% endif %} "romana-compute0{{compute.id}}"
+    {% endfor %}
+  ],
+  "stack_nodes": [
+    {% for compute in computes %}
+      "romana-compute0{{compute.id}}",
+    {% endfor %}
+    "romana-controller"
+  ],
+  "controller": [
+    "romana-controller"
+  ]
+}
