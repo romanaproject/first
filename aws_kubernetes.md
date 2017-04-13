@@ -1,6 +1,6 @@
 # Installing Romana on AWS EC2 with Kubernetes
 
-The setup described below has been tested on Ubuntu 14.04 LTS, but should work similarly on other Linux or Mac OS X environments.
+The setup described below has been tested on Ubuntu 16.04 LTS, but should work similarly on other Linux or Mac OS X environments.
 You may need to install additional development tools.
 
 If you do not wish to install additional tools in your host, you can create a VM and execute the installation steps from there.
